@@ -43,6 +43,8 @@ workspace "Labyrinth"
         toolset "clang"
     end
 
+    libdirs { "lib/glfw3/" }
+
 project "Framework"
 
     kind "ConsoleApp"
@@ -50,6 +52,9 @@ project "Framework"
     files { "src/**.hpp", "src/**.cpp", "src/**.inl", "src/**.h", "src/**.c"  }
 
     includedirs { "lib/rang/include" }
+
+    links { "glfw3", "GL", "pthread", "X11", "vulkan", "Xrandr", "Xcursor", "Xinerama", "Xxf86vm", "dl", "Xi" } --OOF, so many packages
+
 
     filter "configurations:Debug"
             defines { "DEBUG" }
