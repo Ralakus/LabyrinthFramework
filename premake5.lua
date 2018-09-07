@@ -43,7 +43,7 @@ workspace "Labyrinth"
         toolset "clang"
     end
 
-    libdirs { "lib/glfw3/" }
+    libdirs { "lib/vez/Bin/x86_64/" }
 
 project "Framework"
 
@@ -51,10 +51,9 @@ project "Framework"
 
     files { "src/**.hpp", "src/**.cpp", "src/**.inl", "src/**.h", "src/**.c"  }
 
-    includedirs { "lib/rang/include" }
+    includedirs { "lib/rang/include", "lib/vez/Source/", "src/" }
 
-    links { "glfw3", "GL", "pthread", "X11", "vulkan", "Xrandr", "Xcursor", "Xinerama", "Xxf86vm", "dl", "Xi" } --OOF, so many packages
-
+    links { "glfw", "VEZ", "vulkan" }
 
     filter "configurations:Debug"
             defines { "DEBUG" }

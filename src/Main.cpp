@@ -1,11 +1,19 @@
 #include <fstream>
-#include "Aesset.hpp"
+#include <Utilities/LabAsset.hpp>
+
+#include <Event/EventHandler.hpp>
 
 using namespace Labyrinth;
 
-#include <GLFW/glfw3.h>
-
 int main(int argc, char* argv[]) {
+
+    EventHandler EH;
+    EH.RegisterEvent("I am an event", std::make_shared<Event>());
+    
+    std::shared_ptr<EventCallback> EC = std::make_shared<EventCallback>([](){ successln("I am an event callback"); });
+    EH.RegisterCallback("I am an event", EC);
+
+    EH.TriggerEvent("I am an event");
 
     std::ifstream File;
     File.open("Test.lab");
@@ -17,39 +25,7 @@ int main(int argc, char* argv[]) {
     File.close();
 
     successln(Test["Test"]["Nested"]["Nested"].String());
-
-    GLFWwindow* window;
-
-    /* Initialize the library */
-    if (!glfwInit())
-        return -1;
-
-    /* Create a windowed mode window and its OpenGL context */
-    window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
-    if (!window)
-    {
-        glfwTerminate();
-        return -1;
-    }
-
-    /* Make the window's context current */
-    glfwMakeContextCurrent(window);
-
-    /* Loop until the user closes the window */
-    while (!glfwWindowShouldClose(window))
-    {
-        /* Render here */
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        /* Swap front and back buffers */
-        glfwSwapBuffers(window);
-
-        /* Poll for and process events */
-        glfwPollEvents();
-    }
-
-    glfwTerminate();
-    return 0;
+    
 
     return 0;
 }

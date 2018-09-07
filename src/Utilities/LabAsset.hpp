@@ -7,8 +7,6 @@
 #include <algorithm>
 #include <memory>
 
-#include <rang.hpp>
-
 #include "Detail.hpp"
 #include "IO.hpp"
 
@@ -151,12 +149,11 @@ namespace Labyrinth {
                 return -2;
             }
 
-            mNodes.emplace(mContent.substr(i + 1, ValueIndex - i - 2),
-                std::make_unique<LabAssetNode>(
+            mNodes[mContent.substr(i + 1, ValueIndex - i - 2)] = std::make_unique<LabAssetNode>(
                     mContent.substr(ValueIndex, NextClosing - ValueIndex),
                     PassedOpenings > 0 ? LabAssetNode::Type::Aesset : LabAssetNode::Type::String,
                     this
-            ));
+            );
 
             i = NextClosing;
 
@@ -224,12 +221,11 @@ namespace Labyrinth {
                 return -2;
             }
 
-            mNodes.emplace(mContent.substr(i + 1, ValueIndex - i - 2),
-                std::make_unique<LabAssetNode>(
+            mNodes[mContent.substr(i + 1, ValueIndex - i - 2)] = std::make_unique<LabAssetNode>(
                     mContent.substr(ValueIndex, NextClosing - ValueIndex),
                     PassedOpenings > 0 ? LabAssetNode::Type::Aesset : LabAssetNode::Type::String,
                     this->mParent
-            ));
+            );
 
             i = NextClosing;
 
