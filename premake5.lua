@@ -51,7 +51,7 @@ project "Framework"
 
     files { "src/**.hpp", "src/**.cpp", "src/**.inl", "src/**.h", "src/**.c"  }
 
-    includedirs { "lib/rang/include", "lib/vez/Source/", "src/" }
+    includedirs { "lib/rang/include", "lib/vez/Source/", "src/", "lib/glm/" }
 
     links { "glfw", "VEZ", "vulkan" }
 

@@ -26,6 +26,5 @@ int main(int argc, char* argv[]) {
 
     successln(Test["Test"]["Nested"]["Nested"].String());
     
-
     return 0;
 }
