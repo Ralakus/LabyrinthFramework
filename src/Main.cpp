@@ -25,6 +25,12 @@ int main(int argc, char* argv[]) {
     File.close();
 
     successln(Test["Test"]["Nested"]["Nested"].String());
+
+    noticeln("DUMPING BUFFER");
+    for( auto& str : GStreams::StringBuffer() ) {
+        GStreams::PrintOut() << str;
+    }
+    GStreams::PrintOut() << std::endl;
     
     return 0;
 }

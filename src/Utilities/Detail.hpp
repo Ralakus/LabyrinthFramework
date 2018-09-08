@@ -3,43 +3,43 @@
 namespace Labyrinth::Detail {
 
     template<class T>
-	T FromString(const std::string& Value) {
+	inline T FromString(const std::string& Value) {
 		//static_assert(false, "Type conversion not supported");
-		return Value;
+		return T(Value);
 	}
 
 	template<>
-	int FromString<int>(const std::string& Value) { return std::stoi(Value); }
+	inline int FromString<int>(const std::string& Value) { return std::stoi(Value); }
 
 	template<>
-	long FromString<long>(const std::string& Value) { return std::stol(Value); }
+	inline long FromString<long>(const std::string& Value) { return std::stol(Value); }
 
 	template<>
-	long long FromString<long long>(const std::string& Value) { return std::stoll(Value); }
+	inline long long FromString<long long>(const std::string& Value) { return std::stoll(Value); }
 
 	template<>
-	unsigned int FromString<unsigned int>(const std::string& Value) { return std::stoul(Value); }
+	inline unsigned int FromString<unsigned int>(const std::string& Value) { return std::stoul(Value); }
 
 	template<>
-	unsigned long FromString<unsigned long>(const std::string& Value) { return std::stoul(Value); }
+	inline unsigned long FromString<unsigned long>(const std::string& Value) { return std::stoul(Value); }
 
 	template<>
-	unsigned long long FromString<unsigned long long>(const std::string& Value) { return std::stoull(Value); }
+	inline unsigned long long FromString<unsigned long long>(const std::string& Value) { return std::stoull(Value); }
 
 	template<>
-	float FromString<float>(const std::string& Value) { return std::stof(Value); }
+	inline float FromString<float>(const std::string& Value) { return std::stof(Value); }
 
 	template<>
-	double FromString<double>(const std::string& Value) { return std::stod(Value); }
+	inline double FromString<double>(const std::string& Value) { return std::stod(Value); }
 
 	template<>
-	long double FromString<long double>(const std::string& Value) { return std::stold(Value); }
+	inline long double FromString<long double>(const std::string& Value) { return std::stold(Value); }
 
 	template<>
-	std::string FromString<std::string>(const std::string& Value) { return Value; }
+	inline std::string FromString<std::string>(const std::string& Value) { return Value; }
 
 	template<>
-	bool FromString<bool>(const std::string& Value) {
+	inline bool FromString<bool>(const std::string& Value) {
 		if (Value == "true" || Value == "TRUE" || Value == "True") {
 			return true;
 		}
