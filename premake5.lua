@@ -14,8 +14,10 @@ workspace "Labyrinth"
 
     if Is64bit  then
         architecture "x86_64"
+        defines { "LF_64" }
     else
         architecture "x86"
+        defines { "LF_32" }
     end
 
     configurations { "Debug", "Release" }

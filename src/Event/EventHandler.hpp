@@ -15,10 +15,10 @@ namespace Labyrinth {
 		EventHandler();
 		virtual ~EventHandler();
 
-		void RegisterCallback(const std::string& Name, const std::shared_ptr<IEventCallback>& Callback);
+		void RegisterCallback(const std::string& Name, IEventCallback* Callback);
 		void RegisterEvent(const std::string& Name, const std::shared_ptr<Event>& EventPtr);
 		void TriggerEvent(const std::string& Name);
-		void DeregisterCallback(const std::shared_ptr<IEventCallback>& Callback);
+		void DeregisterCallback(IEventCallback* Callback);
     };
 
 
@@ -27,7 +27,7 @@ namespace Labyrinth {
 
 	EventHandler::~EventHandler() {}
 
-	void EventHandler::RegisterCallback(const std::string & Name, const std::shared_ptr<IEventCallback>& Callback) {
+	void EventHandler::RegisterCallback(const std::string & Name, IEventCallback* Callback) {
 		if (mEvents.count(Name) < 1) {
 			return;
 		}
@@ -49,7 +49,7 @@ namespace Labyrinth {
 		}
 	}
 
-	void EventHandler::DeregisterCallback(const std::shared_ptr<IEventCallback>& Callback) {
+	void EventHandler::DeregisterCallback(IEventCallback* Callback) {
 		if (mEvents.count(Callback->mEventName) > 0) {
 			mEvents[Callback->mEventName]->RemoveListener(Callback);
 		}

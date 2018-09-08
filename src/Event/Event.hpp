@@ -8,20 +8,20 @@ namespace Labyrinth {
 
     class Event {
 
-        std::vector<std::shared_ptr<IEventCallback>> mCallbacks;
+        std::vector<IEventCallback*> mCallbacks;
 
     public:
 
         Event()  {}
         ~Event() {}
 
-		void AddListener(const std::shared_ptr<IEventCallback>& Callback);
-		void RemoveListener(const std::shared_ptr<IEventCallback>& Callback);
+		void AddListener(IEventCallback* Callback);
+		void RemoveListener(const IEventCallback* Callback);
 		void Trigger();
     };
 
-    void Event::AddListener(const std::shared_ptr<IEventCallback>& Callback) {
-		std::vector<std::shared_ptr<IEventCallback>>::iterator Index = std::find(mCallbacks.begin(), mCallbacks.end(), Callback);
+    void Event::AddListener(IEventCallback* Callback) {
+		std::vector<IEventCallback*>::iterator Index = std::find(mCallbacks.begin(), mCallbacks.end(), Callback);
 		if (Index != mCallbacks.end()) {
 			return;
 		}
@@ -30,8 +30,8 @@ namespace Labyrinth {
 		}
 	}
 
-	void Event::RemoveListener(const std::shared_ptr<IEventCallback>& Callback) {
-		std::vector<std::shared_ptr<IEventCallback>>::iterator Index = std::find(mCallbacks.begin(), mCallbacks.end(), Callback);
+	void Event::RemoveListener(const IEventCallback* Callback) {
+		std::vector<IEventCallback*>::iterator Index = std::find(mCallbacks.begin(), mCallbacks.end(), Callback);
 		if (Index == mCallbacks.end()) {
 			return;
 		}

@@ -18,7 +18,6 @@ namespace Labyrinth {
 
         GAPI GetAPI() const { return mAPI; }
 
-
     };
 
 }
