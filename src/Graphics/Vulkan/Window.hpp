@@ -15,6 +15,10 @@ namespace Labyrinth::lvk {
         GLFWmonitor*       mMonitor = nullptr;
 		const GLFWvidmode* mMode    = nullptr;
 
+        bool               mSwapChainValid = false;
+
+        void*              mRendererParent = nullptr;
+
     public:
 
          Window(const std::string& title, uint32_t width, uint32_t height, bool Fullscreen);
@@ -26,6 +30,9 @@ namespace Labyrinth::lvk {
         virtual void Update()    override;
 		virtual void Close()     override;
 		virtual void Terminate() override;
+
+        bool  IsSwapChainValid() const { return mSwapChainValid;   }
+        void* GetParent()              { return mRendererParent; }
 
     };
 

@@ -43,14 +43,6 @@ int main(int argc, char* argv[]) {
     }
 
 
-
-    while(!glfwWindowShouldClose(Window)) {
-        glfwPollEvents();
-    }
-
-
-
-
     DestroyDebugUtilsMessengerEXT(Instance, Callback, nullptr);
 
     vkDestroySurfaceKHR(Instance, Surface, nullptr);
@@ -61,11 +53,30 @@ int main(int argc, char* argv[]) {
     glfwDestroyWindow(Window);
     glfwTerminate();*/
 
-    lvk::Renderer Renderer;
-    lvk::Window&  Window = Renderer.GetWindow();
+    GStreams::Buffer(true, false);
 
-    while(Window.IsValid()) {
-        Window.Update();
+    lvk::Renderer Renderer;
+    lvk::Window*  Window = static_cast<lvk::Window*>(Renderer.GetWindow());
+
+    double LastTime = glfwGetTime();
+    double Delta    = 0.0;
+    double OnSecondTimer = 0.0;
+
+    while(Window->IsValid()) {
+
+        Delta = glfwGetTime() - LastTime;
+        LastTime += Delta;
+        OnSecondTimer+= Delta;
+
+        if(OnSecondTimer >= 1.0) {
+            OnSecondTimer = 0.0;
+            noticeln("FPS: ", std::to_string(1.0 / Delta));
+        }
+
+        Window->Update();
+
+
+
     }
     
     return EXIT_SUCCESS;

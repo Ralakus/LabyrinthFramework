@@ -75,6 +75,14 @@ namespace Labyrinth::lvk {
         VkSurfaceKHR                mSurface                 = VK_NULL_HANDLE;
         VezSwapchain                mSwapChain               = VK_NULL_HANDLE;
 
+        struct {
+            VkImage        ColorImage            = VK_NULL_HANDLE;
+            VkImageView    ColorImageView        = VK_NULL_HANDLE;
+            VkImage        DepthStencilImage     = VK_NULL_HANDLE;
+            VkImageView    DepthStencilImageView = VK_NULL_HANDLE;
+            VezFramebuffer Handle                = VK_NULL_HANDLE;
+        }                  mFrameBuffer;
+
 
         std::vector<const char*> GetRequiredExtensions();
         bool                     CheckForValidationLayerSupport();
@@ -93,6 +101,13 @@ namespace Labyrinth::lvk {
 
         int                      PickPhysicalDevice();
 
+        int                      CreateLogicalDevice();
+
+        int                      CreateSwapChain();
+
+        int                      CreateFrameBuffer();
+        int                      CleanupFrameBuffer();
+
         void                     Cleanup();
 
     public:
@@ -101,7 +116,9 @@ namespace Labyrinth::lvk {
         ~Renderer();
 
 
-        Window& GetWindow() { return mWindow; }
+        virtual void     Update()    override;
+        virtual IWindow* GetWindow() override { return &mWindow; }
+
 
 
     };
@@ -112,12 +129,17 @@ namespace Labyrinth::lvk {
     Renderer::Renderer() : IRenderer(GAPI::Vulkan) {
         CreateInstance();
         mWindow.Open();
+        mWindow.mRendererParent = this;
         VkResult Result = glfwCreateWindowSurface(mInstance, mWindow.mWindow, nullptr, &mSurface);
         if(Result != VK_SUCCESS) {
             errorln("Failed to create vulkan surface!");
         }
+        mHasSurface = true;
         CreateDebugCallbacks();
         PickPhysicalDevice();
+        CreateLogicalDevice();
+        CreateSwapChain();
+        CreateFrameBuffer();
     }
     Renderer::~Renderer() {
         Cleanup();
@@ -309,7 +331,6 @@ namespace Labyrinth::lvk {
         }
 
         return Indices.IsComplete() && ExtensionsSupported && SwapChainAdequate;
-        return false;
     }
 
 
@@ -348,20 +369,155 @@ namespace Labyrinth::lvk {
 
 
 
+    int Renderer::CreateLogicalDevice() {
+
+        VezDeviceCreateInfo DeviceCreateInfo = {};
+        DeviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(DeviceExtensions().size());
+        DeviceCreateInfo.ppEnabledExtensionNames = DeviceExtensions().data();
+
+        VkResult Result = vezCreateDevice(mPhysicalDevice, &DeviceCreateInfo, &mDevice);
+        if(Result != VK_SUCCESS) {
+            errorln("Failed to create vulkan logical device!");
+            return -1;
+        }
+
+        return 0;
+    }
+
+    int Renderer::CreateSwapChain() {
+
+        VezSwapchainCreateInfo SwapChainCreateInfo = {};
+        SwapChainCreateInfo.surface = mSurface;
+        SwapChainCreateInfo.format = { VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
+        SwapChainCreateInfo.tripleBuffer = VK_TRUE;
+        
+        VkResult Result = vezCreateSwapchain(mDevice, &SwapChainCreateInfo, &mSwapChain);
+        if(Result != VK_SUCCESS) {
+            errorln("Failed to create vulkan swapchain!");
+            return -1;
+        }
+
+        return 0;
+
+    }
 
 
 
+    int Renderer::CreateFrameBuffer() {
+
+        if(mFrameBuffer.Handle != VK_NULL_HANDLE) {
+            CleanupFrameBuffer();
+        }
+
+        VkSurfaceFormatKHR SwapChainFormat = {};
+        vezGetSwapchainSurfaceFormat(mSwapChain, &SwapChainFormat);
+
+        VezImageCreateInfo ImageCreateInfo = {};
+        ImageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+        ImageCreateInfo.format = SwapChainFormat.format;
+        ImageCreateInfo.extent = { mWindow.mWidth, mWindow.mHeight, 1 };
+        ImageCreateInfo.mipLevels = 1;
+        ImageCreateInfo.arrayLayers = 1;
+        ImageCreateInfo.samples = VK_SAMPLE_COUNT_16_BIT;
+        ImageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+        ImageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
+        VkResult Result = vezCreateImage(mDevice, VEZ_MEMORY_GPU_ONLY, &ImageCreateInfo, &mFrameBuffer.ColorImage);
+        if(Result != VK_SUCCESS) {
+            errorln("Failed to create vulkan color buffer image!");
+            return -1;
+        }
+
+        VezImageViewCreateInfo ImageViewCreateInfo = {};
+        ImageViewCreateInfo.image = mFrameBuffer.ColorImage;
+        ImageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        ImageViewCreateInfo.format = ImageCreateInfo.format;
+        ImageViewCreateInfo.subresourceRange.layerCount = 1;
+        ImageViewCreateInfo.subresourceRange.levelCount = 1;
+        
+        Result = vezCreateImageView(mDevice, &ImageViewCreateInfo, &mFrameBuffer.ColorImageView);
+        if(Result != VK_SUCCESS) {
+            errorln("Failed to create vulkan color buffer image view!");
+            return -1;
+        }
+
+        ImageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+        ImageCreateInfo.format = VK_FORMAT_D32_SFLOAT;
+        ImageCreateInfo.extent = { mWindow.mWidth, mWindow.mHeight, 1 };
+        ImageCreateInfo.mipLevels = 1;
+        ImageCreateInfo.arrayLayers = 1;
+        ImageCreateInfo.samples = VK_SAMPLE_COUNT_16_BIT;
+        ImageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+        ImageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
+        Result = vezCreateImage(mDevice, VEZ_MEMORY_GPU_ONLY, &ImageCreateInfo, &mFrameBuffer.DepthStencilImage);
+        if(Result != VK_SUCCESS) {
+            errorln("Failed to create vulkan depth buffer image!");
+            return -1;
+        }
 
 
+        ImageViewCreateInfo.image = mFrameBuffer.ColorImage;
+        ImageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+        ImageViewCreateInfo.format = ImageCreateInfo.format;
+        ImageViewCreateInfo.subresourceRange.layerCount = 1;
+        ImageViewCreateInfo.subresourceRange.levelCount = 1;
+
+        Result = vezCreateImageView(mDevice, &ImageViewCreateInfo, &mFrameBuffer.DepthStencilImageView);
+        if(Result != VK_SUCCESS) {
+            errorln("Failed to create vulkan depth buffer image view!");
+            return -1;
+        }
+
+        std::array<VkImageView, 2> Attachments = { mFrameBuffer.ColorImageView, mFrameBuffer.DepthStencilImageView };
+
+        VezFramebufferCreateInfo FrameBufferCreateInfo = {};
+        FrameBufferCreateInfo.attachmentCount = static_cast<uint32_t>(Attachments.size());
+        FrameBufferCreateInfo.pAttachments = Attachments.data();
+        FrameBufferCreateInfo.width  = mWindow.mWidth;
+        FrameBufferCreateInfo.height = mWindow.mHeight;
+        FrameBufferCreateInfo.layers = 1;
+
+        Result = vezCreateFramebuffer(mDevice, &FrameBufferCreateInfo, &mFrameBuffer.Handle);
+        if(Result != VK_SUCCESS) {
+            errorln("Failed to create vulkan framebuffer!");
+            return -1;
+        }
+        
+
+        return 0;
+        
+    }
+
+    int Renderer::CleanupFrameBuffer() {
+        vezDestroyFramebuffer(mDevice, mFrameBuffer.Handle);
+        vezDestroyImageView  (mDevice, mFrameBuffer.ColorImageView);
+        vezDestroyImageView  (mDevice, mFrameBuffer.DepthStencilImageView);
+        vezDestroyImage      (mDevice, mFrameBuffer.ColorImage);
+        vezDestroyImage      (mDevice, mFrameBuffer.DepthStencilImage);
+        return 0;
+    }
 
 
 
     void Renderer::Cleanup() {
+        vezDeviceWaitIdle(mDevice);
+        if(mSwapChain     != VK_NULL_HANDLE) { vezDestroySwapchain(mDevice, mSwapChain); }
+        if(mDevice        != VK_NULL_HANDLE) { vezDestroyDevice(mDevice); }
         if(mDebugCallback != VK_NULL_HANDLE) { DestroyDebugUtilsMessengerEXT(mInstance, mDebugCallback, nullptr); }
         if(mSurface       != VK_NULL_HANDLE) { vkDestroySurfaceKHR(mInstance, mSurface, nullptr); }
         if(mInstance      != VK_NULL_HANDLE) { vezDestroyInstance(mInstance); }
         mWindow.Terminate();
         glfwTerminate();
+    }
+
+
+
+
+    void Renderer::Update() {
+
+
+
     }
 
 }
