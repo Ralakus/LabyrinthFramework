@@ -79,17 +79,19 @@ namespace Labyrinth::lvk {
         std::vector<const char*> GetRequiredExtensions();
         bool                     CheckForValidationLayerSupport();
 
-        QueueFamilyIndices       FindDeviceQueueFamilies(VkPhysicalDevice Device);
+        int                      CreateInstance();
+        int                      CreateDebugCallbacks();
 
+
+
+        QueueFamilyIndices       FindDeviceQueueFamilies(VkPhysicalDevice Device);
+        SwapChainSupportDetails  QuerySwapChainSupportDetails(VkPhysicalDevice Device);
         bool                     CheckPhysicalDeviceExtensionSupport(VkPhysicalDevice Device);
         bool                     IsPhysicalDeviceSuitable(VkPhysicalDevice Device);
 
 
 
-        int                      CreateInstance();
-        int                      CreateDebugCallbacks();
-
-
+        int                      PickPhysicalDevice();
 
         void                     Cleanup();
 
@@ -104,14 +106,24 @@ namespace Labyrinth::lvk {
 
     };
 
+
+
+
     Renderer::Renderer() : IRenderer(GAPI::Vulkan) {
         CreateInstance();
         mWindow.Open();
+        VkResult Result = glfwCreateWindowSurface(mInstance, mWindow.mWindow, nullptr, &mSurface);
+        if(Result != VK_SUCCESS) {
+            errorln("Failed to create vulkan surface!");
+        }
         CreateDebugCallbacks();
+        PickPhysicalDevice();
     }
     Renderer::~Renderer() {
         Cleanup();
     }
+
+
 
 
 
@@ -146,68 +158,6 @@ namespace Labyrinth::lvk {
         return RequiredLayers.empty();
     }
 
-    QueueFamilyIndices Renderer::FindDeviceQueueFamilies(VkPhysicalDevice Device) {
-        QueueFamilyIndices Indices;
-
-        uint32_t QueueFamilyCount = 0;
-        vkGetPhysicalDeviceQueueFamilyProperties(Device, &QueueFamilyCount, nullptr);
-
-        std::vector<VkQueueFamilyProperties> QueueFamilies(QueueFamilyCount);
-        vkGetPhysicalDeviceQueueFamilyProperties(Device, &QueueFamilyCount, QueueFamilies.data());
-
-        int i = 0;
-        for (const auto& QueueFamily : QueueFamilies) {
-            if (QueueFamily.queueCount > 0 && QueueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-                Indices.GraphicsFamily = i;
-            }
-
-            VkBool32 PresentSupport = false;
-            vkGetPhysicalDeviceSurfaceSupportKHR(Device, i, mSurface, &PresentSupport);
-
-            if (QueueFamily.queueCount > 0 && PresentSupport) {
-                Indices.PresentFamily = i;
-            }
-
-            if (Indices.IsComplete()) {
-                break;
-            }
-
-            i++;
-        }
-
-        return Indices;
-    }
-
-    bool Renderer::CheckPhysicalDeviceExtensionSupport(VkPhysicalDevice Device) {
-        uint32_t ExtensionCount;
-        vkEnumerateDeviceExtensionProperties(Device, nullptr, &ExtensionCount, nullptr);
-
-        std::vector<VkExtensionProperties> AvailableExtensions(ExtensionCount);
-        vkEnumerateDeviceExtensionProperties(Device, nullptr, &ExtensionCount, AvailableExtensions.data());
-
-        std::set<std::string> RequiredExtensions(DeviceExtensions().begin(), DeviceExtensions().end());
-
-        for (const auto& Extension : AvailableExtensions) {
-            RequiredExtensions.erase(Extension.extensionName);
-        }
-
-        return RequiredExtensions.empty();
-    }
-
-    bool Renderer::IsPhysicalDeviceSuitable(VkPhysicalDevice Device) {
-        /*QueueFamilyIndices indices = findQueueFamilies(device);
-
-        bool extensionsSupported = CheckPhysicalDeviceExtensionSupport(device);
-
-        bool swapChainAdequate = false;
-        if (extensionsSupported) {
-            SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device);
-            swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
-        }
-
-        return indices.isComplete() && extensionsSupported && swapChainAdequate;*/
-        return false;
-    }
 
     int Renderer::CreateInstance() {
 
@@ -269,8 +219,146 @@ namespace Labyrinth::lvk {
     }
 
 
+
+
+
+
+
+
+     QueueFamilyIndices Renderer::FindDeviceQueueFamilies(VkPhysicalDevice Device) {
+        QueueFamilyIndices Indices;
+
+        uint32_t QueueFamilyCount = 0;
+        vkGetPhysicalDeviceQueueFamilyProperties(Device, &QueueFamilyCount, nullptr);
+
+        std::vector<VkQueueFamilyProperties> QueueFamilies(QueueFamilyCount);
+        vkGetPhysicalDeviceQueueFamilyProperties(Device, &QueueFamilyCount, QueueFamilies.data());
+
+        int i = 0;
+        for (const auto& QueueFamily : QueueFamilies) {
+            if (QueueFamily.queueCount > 0 && QueueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+                Indices.GraphicsFamily = i;
+            }
+
+            VkBool32 PresentSupport = false;
+            vkGetPhysicalDeviceSurfaceSupportKHR(Device, i, mSurface, &PresentSupport);
+
+            if (QueueFamily.queueCount > 0 && PresentSupport) {
+                Indices.PresentFamily = i;
+            }
+
+            if (Indices.IsComplete()) {
+                break;
+            }
+
+            i++;
+        }
+
+        return Indices;
+    }
+
+    SwapChainSupportDetails Renderer::QuerySwapChainSupportDetails(VkPhysicalDevice Device) {
+        SwapChainSupportDetails Details;
+
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(Device, mSurface, &Details.Capabilities);
+
+        uint32_t FormatCount;
+        vkGetPhysicalDeviceSurfaceFormatsKHR(Device, mSurface, &FormatCount, nullptr);
+
+        if (FormatCount != 0) {
+            Details.Formats.resize(FormatCount);
+            vkGetPhysicalDeviceSurfaceFormatsKHR(Device, mSurface, &FormatCount, Details.Formats.data());
+        }
+
+        uint32_t presentModeCount;
+        vkGetPhysicalDeviceSurfacePresentModesKHR(Device, mSurface, &presentModeCount, nullptr);
+
+        if (presentModeCount != 0) {
+            Details.PresentModes.resize(presentModeCount);
+            vkGetPhysicalDeviceSurfacePresentModesKHR(Device, mSurface, &presentModeCount, Details.PresentModes.data());
+        }
+
+        return Details;
+    }
+
+    bool Renderer::CheckPhysicalDeviceExtensionSupport(VkPhysicalDevice Device) {
+        uint32_t ExtensionCount;
+        vkEnumerateDeviceExtensionProperties(Device, nullptr, &ExtensionCount, nullptr);
+
+        std::vector<VkExtensionProperties> AvailableExtensions(ExtensionCount);
+        vkEnumerateDeviceExtensionProperties(Device, nullptr, &ExtensionCount, AvailableExtensions.data());
+
+        std::set<std::string> RequiredExtensions(DeviceExtensions().begin(), DeviceExtensions().end());
+
+        for (const auto& Extension : AvailableExtensions) {
+            RequiredExtensions.erase(Extension.extensionName);
+        }
+
+        return RequiredExtensions.empty();
+    }
+
+    bool Renderer::IsPhysicalDeviceSuitable(VkPhysicalDevice Device) {
+        QueueFamilyIndices Indices = FindDeviceQueueFamilies(Device);
+
+        bool ExtensionsSupported = CheckPhysicalDeviceExtensionSupport(Device);
+
+        bool SwapChainAdequate = false;
+        if (ExtensionsSupported) {
+            SwapChainSupportDetails SwapChainSupport = QuerySwapChainSupportDetails(Device);
+            SwapChainAdequate = !SwapChainSupport.Formats.empty() && !SwapChainSupport.PresentModes.empty();
+        }
+
+        return Indices.IsComplete() && ExtensionsSupported && SwapChainAdequate;
+        return false;
+    }
+
+
+    int Renderer::PickPhysicalDevice() {
+        uint32_t DeviceCount = 0;
+        vkEnumeratePhysicalDevices(mInstance, &DeviceCount, nullptr);
+
+        if (DeviceCount == 0) {
+            errorln("Failed to find any physical device with vulkan support!");
+            return -1;
+        }
+
+        std::vector<VkPhysicalDevice> Devices(DeviceCount);
+        vkEnumeratePhysicalDevices(mInstance, &DeviceCount, Devices.data());
+
+        for (const auto& Device : Devices) {
+            if (IsPhysicalDeviceSuitable(Device)) {
+                mPhysicalDevice = Device;
+                VkPhysicalDeviceProperties DeviceProperties;
+                vezGetPhysicalDeviceProperties(Device, &DeviceProperties);
+                noticeln("Using: \"", DeviceProperties.deviceName, "\"");
+                break;
+            }
+        }
+
+        if (mPhysicalDevice == VK_NULL_HANDLE) {
+            errorln("Failed to find suitable physical device!");
+            return -1;
+        }
+
+        return 0;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     void Renderer::Cleanup() {
         if(mDebugCallback != VK_NULL_HANDLE) { DestroyDebugUtilsMessengerEXT(mInstance, mDebugCallback, nullptr); }
+        if(mSurface       != VK_NULL_HANDLE) { vkDestroySurfaceKHR(mInstance, mSurface, nullptr); }
         if(mInstance      != VK_NULL_HANDLE) { vezDestroyInstance(mInstance); }
         mWindow.Terminate();
         glfwTerminate();
