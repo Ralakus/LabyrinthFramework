@@ -29,8 +29,15 @@ namespace Labyrinth::lvk {
         }
     }
 
-    static inline VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
-        errorln("[ vk:error ]: ", pCallbackData->pMessage);
+    static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
+
+        switch (messageSeverity) {
+            case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT: errorln("[ vk:error ]: ", pCallbackData->pMessage); break;
+            case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT: noticeln("[ vk:notice ]: ", pCallbackData->pMessage); break;
+            case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT: warnln("[ vk:warn ]: ", pCallbackData->pMessage); break;
+            case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT: warnln("[ vk:daig ]: ", pCallbackData->pMessage); break;
+            default: errorln("[ vk:error ]: ", pCallbackData->pMessage); break;
+        }
 
         return VK_FALSE;
     }
@@ -51,7 +58,7 @@ namespace Labyrinth::lvk {
     };
 
     class Renderer : public IRenderer {
-
+    public:
         static const std::vector<const char*>& ValidationLayers() {
             static std::vector<const char*> mLayers = { "VK_LAYER_LUNARG_standard_validation" };
             return mLayers;
@@ -226,7 +233,7 @@ namespace Labyrinth::lvk {
 
         VkDebugUtilsMessengerCreateInfoEXT DebugCallbackCreateInfo = {};
         DebugCallbackCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-        DebugCallbackCreateInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+        DebugCallbackCreateInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT | VK_DEBUG_REPORT_INFORMATION_BIT_EXT | VK_DEBUG_REPORT_DEBUG_BIT_EXT;
         DebugCallbackCreateInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
         DebugCallbackCreateInfo.pfnUserCallback = DebugCallback;
 
@@ -502,6 +509,7 @@ namespace Labyrinth::lvk {
 
     void Renderer::Cleanup() {
         vezDeviceWaitIdle(mDevice);
+        CleanupFrameBuffer();
         if(mSwapChain     != VK_NULL_HANDLE) { vezDestroySwapchain(mDevice, mSwapChain); }
         if(mDevice        != VK_NULL_HANDLE) { vezDestroyDevice(mDevice); }
         if(mDebugCallback != VK_NULL_HANDLE) { DestroyDebugUtilsMessengerEXT(mInstance, mDebugCallback, nullptr); }
